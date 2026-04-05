@@ -14,15 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-
-/**
- * 
- * @author Jose Ortega
- */
 @Service
 public class ProductoService {
 
-    // El repositorio es final para asegurar la inmutabilidad
     private final ProductoRepository productoRepository;
     private final FirebaseStorageService firebaseStorageService;
 
@@ -33,7 +27,7 @@ public class ProductoService {
 
     @Transactional(readOnly = true)
     public List<Producto> getProductos(boolean activo) {
-        if (activo) { //Sólo activos...            
+        if (activo) {
             return productoRepository.findByActivoTrue();
         }
         return productoRepository.findAll();
@@ -47,7 +41,7 @@ public class ProductoService {
     @Transactional
     public void save(Producto producto, MultipartFile imagenFile) {
         producto = productoRepository.save(producto);
-        if (!imagenFile.isEmpty()) { //Si no está vacío... pasaron una imagen...            
+        if (!imagenFile.isEmpty()) { //Si no está vacío ... pasaron una imagen ...
             try {
                 String rutaImagen = firebaseStorageService.uploadImage(
                         imagenFile, "producto",
@@ -55,7 +49,6 @@ public class ProductoService {
                 producto.setRutaImagen(rutaImagen);
                 productoRepository.save(producto);
             } catch (IOException e) {
-
             }
         }
     }
@@ -65,7 +58,7 @@ public class ProductoService {
         // Verifica si la categoría existe antes de intentar eliminarlo
         if (!productoRepository.existsById(idProducto)) {
             // Lanza una excepción para indicar que el usuario no fue encontrado
-            throw new IllegalArgumentException("El producto con ID " + idProducto + " no existe.");
+            throw new IllegalArgumentException("La producto con ID " + idProducto + " no existe. ");
         }
         try {
             productoRepository.deleteById(idProducto);
@@ -73,5 +66,40 @@ public class ProductoService {
             // Lanza una nueva excepción para encapsular el problema de integridad de datos
             throw new IllegalStateException("No se puede eliminar la producto. Tiene datos asociados.", e);
         }
+    }
+    
+    @Transactional(readOnly = true)
+    public List<Producto> consultaDerivada(double precioInf, double precioSup) {
+        return productoRepository.findByPrecioBetweenOrderByPrecioAsc(precioInf, precioSup);
+    }
+    
+    @Transactional(readOnly = true)
+    public List<Producto> consultaJPQL(double precioInf, double precioSup){
+        return productoRepository.consultaJPQL(precioInf, precioSup);
+    }
+    
+    @Transactional(readOnly = true)
+    public List<Producto> consultaSQL(double precioInf, double precioSup){
+        return productoRepository.consultaSQL(precioInf, precioSup);
+    }
+    
+    //---------------------------[practica2]-----------------------------
+    
+    //consulta derivada
+    @Transactional(readOnly = true)
+    public List<Producto> consultaDerivadaPractica(double precioMin, double precioMax, int existenciasMin, String descripcionCategoria){
+        return productoRepository.findByActivoTrueAndPrecioBetweenAndExistenciasGreaterThanAndCategoria_ActivoTrueAndCategoria_DescripcionContainingOrderByPrecioAsc(precioMin, precioMax, existenciasMin, descripcionCategoria);
+    }
+    
+    //consulta x JPQL
+    @Transactional(readOnly = true)
+    public List<Producto> consultaJPQLPractica(double precioMin, double precioMax, int existenciasMin, String descripcionCategoria){
+        return productoRepository.consultaJPQLPractica(precioMin, precioMax, existenciasMin, descripcionCategoria);
+    }
+    
+    //consulta sql
+    @Transactional(readOnly = true)
+    public List<Producto> consultaSQLPractica(double precioMin, double precioMax, int existenciasMin, String descripcionCategoria){
+        return productoRepository.consultaSQLPractica(precioMin, precioMax, existenciasMin, descripcionCategoria);
     }
 }
